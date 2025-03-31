@@ -19,8 +19,8 @@ if not OPENROUTER_API_KEY:
 
 # Knowledge files
 KNOWLEDGE_FILES = {
-    "fluent": "fluent.json",
-    "altius": "altius.json"
+    "fluent": "Fluent.json",
+    "altius": "Altius.json"
 }
 
 # Maximum number of questions to generate
