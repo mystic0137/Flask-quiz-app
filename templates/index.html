@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyperbolic Labs Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .glass-morphism {
+            background: rgba(45, 55, 72, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.125);
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes confetti {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(100vh) rotate(360deg); }
+        }
+        .loading-container {
+            text-align: center;
+            color: white;
+        }
+        .loading-text {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        .confetti {
+            position: fixed;
+            pointer-events: none;
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            opacity: 0.7;
+            animation: confetti 3s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Project Selection Screen -->
+    <div id="project-selection" class="text-center w-full max-w-4xl">
+        <h1 class="text-5xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
+            Hyperbolic Labs Quiz
+        </h1>
+        <p class="text-xl text-gray-300 mb-12">Choose Your Learning Path</p>
+
+        <div class="flex justify-center space-x-6">
+            <button onclick="startQuiz('fluent')" 
+                class="project-btn transform transition-all duration-300 hover:scale-105 active:scale-95 
+                bg-gradient-to-r from-blue-500 to-purple-600 text-white 
+                px-8 py-4 rounded-xl text-lg font-semibold shadow-2xl hover:shadow-blue-500/50">
+                Fluent Project
+            </button>
+            <button onclick="startQuiz('altius')" 
+                class="project-btn transform transition-all duration-300 hover:scale-105 active:scale-95 
+                bg-gradient-to-r from-green-500 to-teal-600 text-white 
+                px-8 py-4 rounded-xl text-lg font-semibold shadow-2xl hover:shadow-green-500/50">
+                Altius Project
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="hidden fixed inset-0 bg-gradient-to-r from-blue-900 to-purple-900 z-50 flex items-center justify-center">
+        <div class="loading-container">
+            <div class="loading-text">Generating Quiz</div>
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Quiz Container -->
+    <div id="quiz-container" class="hidden w-full max-w-4xl">
+        <div class="glass-morphism rounded-2xl p-8 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="quiz-title" class="text-3xl font-bold text-white"></h2>
+                <div class="flex items-center space-x-4">
+                    <span id="timer" class="text-xl font-semibold text-blue-300"></span>
+                    <span id="question-counter" class="text-lg text-gray-400"></span>
+                </div>
+            </div>
+
+            <div id="question-container">
+                <div id="current-question" class="bg-gray-700 rounded-xl p-6 mb-6 transition-all duration-300 text-white text-opacity-90"></div>
+                <div id="options-container" class="grid grid-cols-2 gap-4"></div>
+            </div>
+
+            <div class="mt-6 flex justify-between">
+                <button id="prev-btn" onclick="navigateQuestion(-1)" 
+                    class="px-6 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors hidden">
+                    Previous
+                </button>
+                <button id="next-btn" onclick="navigateQuestion(1)" 
+                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors">
+                    Next
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-container" class="hidden text-center w-full max-w-4xl">
+        <div class="glass-morphism rounded-2xl p-12">
+            <h2 id="congratulation-title" class="text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"></h2>
+            <div id="congratulation-message" class="text-xl text-white mb-6"></div>
+            <div id="score-display" class="text-6xl font-extrabold mb-8 text-white"></div>
+            <div id="performance-breakdown" class="flex justify-center gap-4 mb-8"></div>
+            <div id="detailed-results" class="text-left mb-8"></div>
+            <button onclick="restartQuiz()" class="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-colors">
+                Restart Quiz
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let quizTimer;
+        let timeRemaining = 600; // 10 minutes
+        let currentSource = null;
+
+        function startQuiz(source) {
+            // Show loading screen
+            document.getElementById('project-selection').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            // Simulate loading and question generation
+            setTimeout(async () => {
+                try {
+                    const response = await fetch(`/generate?source=${source}`);
+                    const data = await response.json();
+                    if (data.error || !data.length) {
+                        throw new Error(data.error || 'No questions generated');
+                    }
+
+                    // Hide loading screen
+                    document.getElementById('loading-screen').classList.add('hidden');
+
+                    // Show quiz container
+                    document.getElementById('quiz-container').classList.remove('hidden');
+                    document.getElementById('quiz-title').textContent = `${source.charAt(0).toUpperCase() + source.slice(1)} Quiz`;
+
+                    currentSource = source;
+                    currentQuestions = data;
+                    userAnswers = new Array(currentQuestions.length).fill(null);
+                    currentQuestionIndex = 0;
+
+                    startTimer();
+                    renderQuestion();
+                    updateNavigationButtons();
+                } catch (error) {
+                    // Hide loading screen
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('project-selection').classList.remove('hidden');
+                    alert(`Error: ${error.message}`);
+                }
+            }, 1500); // Simulate 1.5 seconds of loading
+        }
+
+        function renderQuestion() {
+            const question = currentQuestions[currentQuestionIndex];
+            const questionContainer = document.getElementById('current-question');
+            const optionsContainer = document.getElementById('options-container');
+
+            questionContainer.innerHTML = `<p class="text-xl font-semibold text-white">${currentQuestionIndex + 1}. ${question.question}</p>`;
+            
+            optionsContainer.innerHTML = question.options.map((opt, index) => `
+                <button onclick="selectAnswer('${opt}')" 
+                    class="option-btn ${userAnswers[currentQuestionIndex] === opt ? 'bg-blue-600 ring-4 ring-blue-400 text-white' : 'bg-gray-700 hover:bg-blue-600'} 
+                    text-white p-4 rounded-xl transition-all duration-300 ease-in-out"
+                >
+                    ${String.fromCharCode(65 + index)}. ${opt}
+                </button>
+            `).join('');
+        }
+
+        function selectAnswer(selectedOption) {
+            userAnswers[currentQuestionIndex] = selectedOption;
+            renderQuestion(); // Rerender to update button states
+        }
+
+        function navigateQuestion(direction) {
+            currentQuestionIndex = Math.max(0, Math.min(currentQuestionIndex + direction, currentQuestions.length - 1));
+            renderQuestion();
+            updateNavigationButtons();
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            prevBtn.classList.toggle('hidden', currentQuestionIndex === 0);
+            nextBtn.textContent = currentQuestionIndex === currentQuestions.length - 1 ? 'Finish' : 'Next';
+
+            if (currentQuestionIndex === currentQuestions.length - 1) {
+                nextBtn.onclick = finishQuiz;
+            } else {
+                nextBtn.onclick = () => navigateQuestion(1);
+            }
+        }
+
+        function startTimer() {
+            const timerDisplay = document.getElementById('timer');
+            quizTimer = setInterval(() => {
+                timeRemaining--;
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                if (timeRemaining <= 0) {
+                    clearInterval(quizTimer);
+                    finishQuiz();
+                }
+            }, 1000);
+        }
+
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9d56e', '#ff9ff3'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = `${Math.random() * 3}s`;
+                document.body.appendChild(confetti);
+
+                // Remove confetti after animation
+                setTimeout(() => {
+                    document.body.removeChild(confetti);
+                }, 3000);
+            }
+        }
+
+        function finishQuiz() {
+            clearInterval(quizTimer);
+            document.getElementById('quiz-container').classList.add('hidden');
+            
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.classList.remove('hidden');
+
+            const correctAnswers = currentQuestions.filter((q, index) => q.correct_answer === userAnswers[index]).length;
+            const scorePercentage = Math.round((correctAnswers / currentQuestions.length) * 100);
+
+            const scoreDisplay = document.getElementById('score-display');
+            const performanceBreakdown = document.getElementById('performance-breakdown');
+            const congratulationTitle = document.getElementById('congratulation-title');
+            const congratulationMessage = document.getElementById('congratulation-message');
+            const detailedResults = document.getElementById('detailed-results');
+
+            // Determine congratulation message based on score
+            let titleText = '';
+            let messageText = '';
+            let emoji = '';
+
+            if (scorePercentage >= 80) {
+                titleText = 'Excellent Work! 🏆';
+                messageText = 'Outstanding performance! You demonstrated exceptional understanding and mastery of the subject.';
+                emoji = '🎉🌟🚀';
+            } else if (scorePercentage >= 60) {
+                titleText = 'Great Job! 👏';
+                messageText = 'You did well! There\'s room for improvement, but you clearly understand most of the material.';
+                emoji = '👍✨🎈';
+            } else {
+                titleText = 'Keep Studying! 📚';
+                messageText = 'Don\'t be discouraged. Every quiz is an opportunity to learn and grow. Review the material and try again!';
+                emoji = '💪📖🤔';
+            }
+
+            createConfetti();
+
+            scoreDisplay.innerHTML = `${correctAnswers}/${currentQuestions.length}<br><span class="text-3xl">(${scorePercentage}%)</span>`;
+            congratulationTitle.textContent = titleText;
+            congratulationMessage.innerHTML = `${emoji}<br>${messageText}`;
+
+            performanceBreakdown.innerHTML = `
+                <div class="bg-green-600/20 p-4 rounded-xl">
+                    <p class="text-xl font-bold text-green-400">${correctAnswers}</p>
+                    <p class="text-sm text-green-300">Correct</p>
+                </div>
+                <div class="bg-red-600/20 p-4 rounded-xl">
+                    <p class="text-xl font-bold text-red-400">${currentQuestions.length - correctAnswers}</p>
+                    <p class="text-sm text-red-300">Incorrect</p>
+                </div>
+            `;
+
+            // Add detailed results section
+            const detailedResultsHTML = currentQuestions.map((q, index) => `
+                <div class="mb-4 p-4 bg-gray-700 rounded-xl">
+                    <p class="font-bold text-white mb-2">${index + 1}. ${q.question}</p>
+                    <div class="space-y-2">
+                        ${q.options.map(opt => `
+                            <div class="${opt === q.correct_answer ? 'bg-green-600 text-white' : opt === userAnswers[index] ? 'bg-red-600 text-white' : 'bg-gray-600 text-gray-300'} p-2 rounded-lg">
+                                ${opt}
+                                ${opt === q.correct_answer ? ' (Correct Answer)' : ''}
+                                ${opt === userAnswers[index] && opt !== q.correct_answer ? ' (Your Answer)' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            detailedResults.innerHTML = `
+                <h3 class="text-2xl font-bold text-white mb-4">Detailed Results</h3>
+                ${detailedResultsHTML}
+            `;
+        }
+
+        function restartQuiz() {
+            // Reset all state
+            currentQuestions = [];
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            timeRemaining = 600;
+
+            // Hide results, show project selection
+            document.getElementById('results-container').classList.add('hidden');
+            document.getElementById('project-selection').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+venv/
+.env
+cert.pem
+key.pem
+gunicorn_config.py

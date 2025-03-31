@@ -1,0 +1,27 @@
+[
+    {
+        "title": "Blended Execution",
+        "description": "Blended execution enables apps built for different VMs to compose with each other on the same blockchain without friction or switching wallets.",
+        "details": "Blended execution allows programs written for different virtual machines (VMs) to work together within a unified execution environment. Smart contracts, programming languages, and tools built for disparate VMs share the same blockchain state, allowing them to communicate seamlessly. This results in real-time, atomic composability between these otherwise isolated paradigms."
+    },
+    {
+        "title": "Fluent and Blended Execution",
+        "description": "Fluent is the first blended execution network, supporting EVM, SVM, and Wasm-based apps on an Ethereum L2.",
+        "details": "On Fluent, functionalities of the EVM, SVM, and Wasm are 'blended' together at the execution layer. This is achieved through rWasm—a low-level intermediate representation (IR) that serves as Fluent’s VM."
+    },
+    {
+        "title": "AltVM",
+        "description": "An altVM is a VM that serves as an alternative to the EVM, with differentiated characteristics.",
+        "details": "AltVMs can support different execution environments, architectures, or technologies that are not inherently compatible with the EVM."
+    },
+    {
+        "title": "Blended Execution vs MultiVM",
+        "description": "Blended Execution merges VMs into a cohesive system, while MultiVM keeps them separate.",
+        "details": "MultiVM introduces complexity in cross-VM interactions, whereas Blended Execution facilitates seamless collaboration and shared state management."
+    },
+    {
+        "title": "Blended App",
+        "description": "A blended app operates within a blended environment and utilizes multiple VM targets like EVM and Wasm.",
+        "details": "This allows developers to write different parts of an application in the language and execution environment best suited for each component."
+    }
+]
