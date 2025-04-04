@@ -97,7 +97,7 @@ def generate_questions(concept):
     }
 
     data = {
-        "model": "deepseek/deepseek-chat-v3-0324:free",
+        "model": "openrouter/quasar-alpha",
         "messages": [
             {"role": "system", "content": "You are an AI generating structured quiz questions. Always respond in valid JSON format."},
             {"role": "user", "content": prompt}
